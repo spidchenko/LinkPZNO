@@ -3,7 +3,8 @@ package linkpzno;
 import linkpzno.data.*;
 
 import java.sql.*;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DBConnection {
 
@@ -12,82 +13,81 @@ public class DBConnection {
     private static final String PASS = "root";
 
 
-    void setTestDays(TestDay[] testDayList) {
-
+    List<TestDay> getTestDays() {
         String getTestDaysQuery = """
-                SELECT id, predm AS name, date FROM `test_dates` WHERE session LIKE 'Пробне'""";
-
+                SELECT id, predm AS name, date
+                FROM `test_dates`
+                WHERE session LIKE 'Пробне'""";
+        List<TestDay> testDays = new ArrayList<>();
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement stmt = connection.prepareStatement(getTestDaysQuery);
                 ResultSet rs = stmt.executeQuery()
         ) {
-            int i = 0;
             while (rs.next()) {
-                testDayList[i] = new TestDay(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("date")
-                );
-                i++;
+                testDays.add(
+                        new TestDay(
+                                rs.getInt("id"),
+                                rs.getString("name"),
+                                rs.getString("date")
+                        ));
             }
         } catch (SQLException sqlEx) {
             sqlEx.printStackTrace();
         }
+        return testDays;
     }
 
 
-    void setEduCity(EduCity[] eduCityList) {
-
+    List<EduCity> getEduCities() {
         String getEduCityQuery = """
-                SELECT id, name, district_id FROM `city_passage` WHERE status = 1""";
-
+                SELECT id, name, district_id
+                FROM `city_passage`
+                WHERE status = 1""";
+        List<EduCity> eduCityList = new ArrayList<>();
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement stmt = connection.prepareStatement(getEduCityQuery);
                 ResultSet rs = stmt.executeQuery()
         ) {
-            int i = 0;
             while (rs.next()) {
-                eduCityList[i] = new EduCity(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getInt("district_id")
-                );
-                i++;
+                eduCityList.add(
+                        new EduCity(
+                                rs.getInt("id"),
+                                rs.getString("name"),
+                                rs.getInt("district_id")
+                        ));
             }
         } catch (SQLException sqlEx) {
             sqlEx.printStackTrace();
         }
+        return eduCityList;
     }
 
 
-    void setTestPoint(TestPoint[] testPointList, int testDayId, int eduCityId) {
-
+    void setTestPoint(ArrayList<TestPoint> testPoints, int testDayId, int eduCityId) {
         String getTestPointsQuery = """
-                SELECT test_points.id, pt_id, auds, name, short_name FROM `test_points`
+                SELECT test_points.id, pt_id, auds, name, short_name
+                FROM `test_points`
                 JOIN pt ON pt.id = test_points.pt_id
                 WHERE archive LIKE "Активний" AND district = ? AND date_id = ?""";
-
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement stmt = connection.prepareStatement(getTestPointsQuery)
         ) {
             stmt.setInt(1, eduCityId);
             stmt.setInt(2, testDayId);
-
             try (ResultSet rs = stmt.executeQuery()) {
-                Arrays.fill(testPointList, null);
-                int i = 0;
+                testPoints.clear();
                 while (rs.next()) {
-                    testPointList[i] = new TestPoint(
-                            rs.getInt("id"),
-                            rs.getInt("pt_id"),
-                            rs.getString("name").replace("&quot;", "\""),
-                            rs.getString("short_name").replace("&quot;", "\""),
-                            rs.getInt("auds")
-                    );
-                    i++;
+                    testPoints.add(
+                            new TestPoint(
+                                    rs.getInt("id"),
+                                    rs.getInt("pt_id"),
+                                    rs.getString("name").replace("&quot;", "\""),
+                                    rs.getString("short_name").replace("&quot;", "\""),
+                                    rs.getInt("auds")
+                            ));
                 }
             }
         } catch (SQLException sqlEx) {
@@ -95,8 +95,8 @@ public class DBConnection {
         }
     }
 
-    void getSubjectLangList(SubjectLang[] subjectLangList, int eduCityId, int testDayId) {
 
+    void getSubjectLangList(ArrayList<SubjectLang> subjectLangList, int eduCityId, int testDayId) {
         String getSubjectLangQuery = """
                 SELECT subject_id, lang_id, subject.name AS subject_name, lang.name AS lang_name, COUNT( subject_user.id ) AS NUM
                 FROM `subject_user`
@@ -118,12 +118,6 @@ public class DBConnection {
                     FROM allocation
                 )
                 GROUP BY subject_id, lang_id""";
-
-        int subjectLangCounter = 0;
-
-        Arrays.fill(subjectLangList, null);
-
-
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement stmt = connection.prepareStatement(getSubjectLangQuery)
@@ -131,8 +125,9 @@ public class DBConnection {
             stmt.setInt(1, testDayId);
             stmt.setInt(2, eduCityId);
             try (ResultSet rs = stmt.executeQuery()) {
+                subjectLangList.clear();
                 while (rs.next()) {
-                    subjectLangList[subjectLangCounter++] =
+                    subjectLangList.add(
                             new SubjectLang(
                                     rs.getInt("subject_id"),
                                     rs.getInt("lang_id"),
@@ -140,7 +135,7 @@ public class DBConnection {
                                     rs.getString("lang_name"),
                                     Integer.parseInt(rs.getString("NUM")),
                                     eduCityId
-                            );
+                            ));
                 }
             }
         } catch (SQLException sqlEx) {
@@ -150,11 +145,9 @@ public class DBConnection {
 
 
     private void createEmptyClassrooms(int testPointId, int audsNumToCreate) {
-
         final String newAudQuery = """
                 INSERT INTO auds_list (testpoint_id, aud_num, predmet_id, lang_id, free, code)
                 VALUES(?, ?, ?, ?, ?, ?)""";
-
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement updateStmt = connection.prepareStatement(newAudQuery)
@@ -182,7 +175,6 @@ public class DBConnection {
                 WHERE free = 0 AND testpoint_id = ?
                 ORDER BY aud_num DESC
                 LIMIT 1""";
-
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement stmt = connection.prepareStatement(getFullAuditoryNumberQuery)
@@ -200,21 +192,27 @@ public class DBConnection {
     }
 
 
-    void getAuditoryList(Auditory[] auditoryList, int testPointId, int audsNum) {
+    void getAuditoryList(ArrayList<Classroom> classrooms, int testPointId, int audsNum) {
+        String getAuditoryListCountQuery = """
+                SELECT COUNT(id)
+                FROM `auds_list`
+                WHERE testpoint_id = ?""";
+        String getAuditoryListQuery = """
+                SELECT *
+                FROM `auds_list`
+                WHERE testpoint_id = ?""";
 
-        String getAuditoryListCountQuery = "SELECT COUNT(id) AS n FROM `auds_list` WHERE testpoint_id = ?";
-        String getAuditoryListQuery = "SELECT * FROM `auds_list` WHERE testpoint_id = ?";
         int countQueryResult = -1;
 
         try (
                 Connection connection = getDatabaseConnection();
-                PreparedStatement stmt = connection.prepareStatement(getAuditoryListCountQuery);
+                PreparedStatement countStmt = connection.prepareStatement(getAuditoryListCountQuery);
                 PreparedStatement listStmt = connection.prepareStatement(getAuditoryListQuery)
         ) {
-            stmt.setInt(1, testPointId);
-            try (ResultSet rs = stmt.executeQuery()) {
+            countStmt.setInt(1, testPointId);
+            try (ResultSet rs = countStmt.executeQuery()) {
                 while (rs.next()) {
-                    countQueryResult = rs.getInt("n");
+                    countQueryResult = rs.getInt(1);
                 }
             }
 
@@ -223,23 +221,20 @@ public class DBConnection {
                 createEmptyClassrooms(testPointId, audsNum);
             }
 
-            Arrays.fill(auditoryList, null);
-
-
             listStmt.setInt(1, testPointId);
             try (ResultSet rs = listStmt.executeQuery()) {
-                int i = 0;
+                classrooms.clear();
                 while (rs.next()) {
-                    auditoryList[i] = new Auditory(
-                            rs.getInt("id"),
-                            rs.getInt("testpoint_id"),
-                            rs.getInt("aud_num"),
-                            rs.getInt("predmet_id"),
-                            rs.getInt("lang_id"),
-                            rs.getInt("free"),
-                            rs.getString("code")
-                    );
-                    i++;
+                    classrooms.add(
+                            new Classroom(
+                                    rs.getInt("id"),
+                                    rs.getInt("testpoint_id"),
+                                    rs.getInt("aud_num"),
+                                    rs.getInt("predmet_id"),
+                                    rs.getInt("lang_id"),
+                                    rs.getInt("free"),
+                                    rs.getString("code")
+                            ));
                 }
             }
         } catch (SQLException sqlEx) {
@@ -248,7 +243,8 @@ public class DBConnection {
     }
 
 
-    void setAuditorySubjectLangId(int testPointId, int audsNum) {
+
+    void updateSubjectLangIdsInAud(int testPointId, int audsNum) {
 
         final String subjectLangQuery = """
                 SELECT subject_id, lang_id FROM subject_user
@@ -272,8 +268,8 @@ public class DBConnection {
                 stmt.setInt(1, testPointId);
                 stmt.setInt(2, audIndex);
                 try (ResultSet rs = stmt.executeQuery()) {
-                    int currentSubjectId = -1;
-                    int currentLangId = -1;
+                    int currentSubjectId;
+                    int currentLangId;
 
                     int audSubjectId = -1;
                     int audLangId = -1;
@@ -297,6 +293,11 @@ public class DBConnection {
 
                     System.out.println(audIndex + ". audSubjectId = " + audSubjectId + "; audLangId = " + audLangId);
 
+                    if ((audSubjectId == -1) || (audLangId == -1)) {
+                        System.err.println("Error! Classroom #" + audIndex + " is empty");
+                        return;
+                    }
+
                     updateStmt.setInt(1, audSubjectId);
                     updateStmt.setInt(2, audLangId);
                     updateStmt.setInt(3, testPointId);
@@ -312,46 +313,14 @@ public class DBConnection {
 
     void link(int testPointIdToLink, int audNumToLink, int numPupilsToLink, SubjectLang subjectLangToLink) {
 
-        final String getNPupils = """
-                SELECT su.id, su.user_id, su.bill
-                FROM subject_user AS su
-                JOIN users u ON u.id = su.user_id
-                WHERE payment = 1 AND subject_id = ? AND lang_id = ? AND city_passage = ?
-                AND su.id NOT IN
-                (
-                    SELECT test_id
-                    FROM allocation
-                )
-                LIMIT ?""";
-
-        final String getNumPupilsInThisAud = """
-                SELECT MAX(place)
-                FROM `allocation`
-                WHERE testpoint_id = ? AND aud = ?""";
-
         final String newAllocationRow = """
                 INSERT INTO allocation (test_id, testpoint_id, aud, place, test_code)
                 VALUES (?, ?, ?, ?, ?)""";
 
-        final String getFreeInAudQuery = """
-                SELECT free
-                FROM auds_list
-                WHERE testpoint_id = ? AND aud_num = ?""";
-
-        final String setFreeInAudQuery = """
-                UPDATE auds_list
-                SET free = ?
-                WHERE testpoint_id = ? AND aud_num = ?""";
-
-        final String getAudInfoQuery = """
-                SELECT subject_id, lang_id FROM subject_user
-                JOIN allocation ON allocation.test_id = subject_user.id
-                WHERE testpoint_id = ? AND aud = ?
-                GROUP BY subject_id, lang_id""";
-
-        int[] pupilsIdToLink = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};   //15
-        int numPupilsInThisAud = -1;    //Заполненость аудитории по allocation
-        int freeInAud = -1;             //Количество свободных мест в аудитории по aud_list
+        if (audNumToLink <= 0) {
+            System.err.println("No classroom selected");
+            return;
+        }
 
         if (numPupilsToLink <= 0) {
             System.err.println("You selected 0 pupils!");
@@ -363,108 +332,148 @@ public class DBConnection {
             System.err.println("numPupilsToLink > subjectLangToLink.numPupils");
             return;
         }
+        //Заполненость аудитории по allocation
+        int numPupilsInThisAud = getTotalPeoplesInAud(testPointIdToLink, audNumToLink);
+        //Количество свободных мест в аудитории по aud_list
+        int totalFreePlacesInAud = getTotalFreePlacesInAud(testPointIdToLink, audNumToLink);
+        List<Integer> pupilsIdToLink = getFirstNPeoplesToLink(subjectLangToLink, numPupilsToLink);
 
+        //Если получается больше 15 человек в аудитории
+        if (numPupilsToLink + numPupilsInThisAud > 15) {
+            System.err.println("Classroom already full!");
+            return;
+        }
 
         try (
                 Connection connection = getDatabaseConnection();
-                PreparedStatement getNPupilsStmt = connection.prepareStatement(getNPupils);
-                PreparedStatement getNumPupilsInThisAudStmt = connection.prepareStatement(getNumPupilsInThisAud);
-                PreparedStatement newAllocationStmt = connection.prepareStatement(newAllocationRow);
-                PreparedStatement getFreeInAudStmt = connection.prepareStatement(getFreeInAudQuery);
-                PreparedStatement setFreeInAudStmt = connection.prepareStatement(setFreeInAudQuery);
-                PreparedStatement getAudInfoStmt = connection.prepareStatement(getAudInfoQuery)
+                PreparedStatement newAllocationStmt = connection.prepareStatement(newAllocationRow)
         ) {
-            //Выбираем н человек из базы
-            getNPupilsStmt.setInt(1, subjectLangToLink.getSubjectId());
-            getNPupilsStmt.setInt(2, subjectLangToLink.getLangId());
-            getNPupilsStmt.setInt(3, subjectLangToLink.getEduCityId());
-            getNPupilsStmt.setInt(4, numPupilsToLink);
-            try (ResultSet rs = getNPupilsStmt.executeQuery()) {
-                int i = 0;
-                while (rs.next()) {
-                    pupilsIdToLink[i++] = rs.getInt("id");
-                }
-                System.out.println("Linking peoples with this ids: " + Arrays.toString(pupilsIdToLink));
-            }
-
-
-            getNumPupilsInThisAudStmt.setInt(1, testPointIdToLink);
-            getNumPupilsInThisAudStmt.setInt(2, audNumToLink);
-            try (ResultSet rs = getNumPupilsInThisAudStmt.executeQuery()) {
-                while (rs.next()) {
-                    numPupilsInThisAud = rs.getInt("MAX(place)");
-                }
-            }
-
-            //Если получается больше 15 человек в аудитории
-            if (numPupilsToLink + numPupilsInThisAud > 15) {
-                System.err.println("Classroom already full!");
-                return;
-            }
-
-            for (int j = 0; j < numPupilsToLink; j++) {
-                //Записали в allocation
-                newAllocationStmt.setInt(1, pupilsIdToLink[j]);
+            //Записали в allocation
+            for (int humanId : pupilsIdToLink) {
+                newAllocationStmt.setInt(1, humanId);
                 newAllocationStmt.setInt(2, testPointIdToLink);
                 newAllocationStmt.setInt(3, audNumToLink);
                 newAllocationStmt.setInt(4, ++numPupilsInThisAud);
-                String testCode = (testPointIdToLink + pupilsIdToLink[j]) % 10 +
+                String testCode = (testPointIdToLink + humanId) % 10 +
                                   Integer.toString(testPointIdToLink + 1000).substring(1) +
-                                  Integer.toString(pupilsIdToLink[j] + 100000).substring(1);
+                                  Integer.toString(humanId + 100000).substring(1);
                 newAllocationStmt.setString(5, testCode);
                 newAllocationStmt.executeUpdate();
             }
 
-            getFreeInAudStmt.setInt(1, testPointIdToLink);
-            getFreeInAudStmt.setInt(2, audNumToLink);
-            try (ResultSet rs = getFreeInAudStmt.executeQuery()) {
-                while (rs.next()) {
-                    freeInAud = rs.getInt("free");
-                }
-            }
+            setTotalFreePlacesInAud(
+                    testPointIdToLink,
+                    audNumToLink,
+                    totalFreePlacesInAud - numPupilsToLink
+            );
 
-            setFreeInAudStmt.setInt(1, (freeInAud - numPupilsToLink));
-            setFreeInAudStmt.setInt(2, testPointIdToLink);
-            setFreeInAudStmt.setInt(3, audNumToLink);
-            setFreeInAudStmt.executeUpdate();
-
-            //В БАЗУ ПОКА НЕ ПИШЕТ
-            //Пройдемся по результату. если есть разные subject_id / lang_id то в свойствах аудитории 99, иначе predmet_id = subject_id, lang_id = lang_id
-            //TODO check this code
-
-            getAudInfoStmt.setInt(1, testPointIdToLink);
-            getAudInfoStmt.setInt(2, audNumToLink);
-
-            try (ResultSet rs = getAudInfoStmt.executeQuery()) {
-                int currentSubjectId = -1;
-                int currentLangId = -1;
-
-                int audSubjectId = -1;
-                int audLangId = -1;
-
-                while (rs.next()) {
-                    currentSubjectId = rs.getInt("subject_id");
-                    currentLangId = rs.getInt("lang_id");
-                    //Check subject
-                    if ((currentSubjectId != audSubjectId) && (audSubjectId != -1)) {
-                        audSubjectId = 99;
-                    } else {
-                        audSubjectId = currentSubjectId;
-                    }
-                    //Check lang
-                    if ((currentLangId != audLangId) && (audLangId != -1)) {
-                        audLangId = 99;
-                    } else {
-                        audLangId = currentLangId;
-                    }
-                }
-
-                System.out.println("Updated ids: audSubjectId = " + audSubjectId + "; audLangId = " + audLangId);
-            }
         } catch (SQLException sqlEx) {
             sqlEx.printStackTrace();
         }
     }
+
+
+    //Выбираем н человек из базы
+    private List<Integer> getFirstNPeoplesToLink(SubjectLang subjectLang, int peoplesNumber) {
+        final String getNPupils = """
+                SELECT su.id, su.user_id, su.bill
+                FROM subject_user AS su
+                JOIN users u ON u.id = su.user_id
+                WHERE payment = 1 AND subject_id = ? AND lang_id = ? AND city_passage = ?
+                AND su.id NOT IN
+                (
+                    SELECT test_id
+                    FROM allocation
+                )
+                LIMIT ?""";
+        ArrayList<Integer> peoples = new ArrayList<>();
+        try (
+                Connection connection = getDatabaseConnection();
+                PreparedStatement getNPupilsStmt = connection.prepareStatement(getNPupils)
+        ) {
+            getNPupilsStmt.setInt(1, subjectLang.getSubjectId());
+            getNPupilsStmt.setInt(2, subjectLang.getLangId());
+            getNPupilsStmt.setInt(3, subjectLang.getEduCityId());
+            getNPupilsStmt.setInt(4, peoplesNumber);
+            try (ResultSet rs = getNPupilsStmt.executeQuery()) {
+                while (rs.next()) {
+                    peoples.add(rs.getInt("id"));
+                }
+                System.out.println("Linking peoples with this ids: " + peoples);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return peoples;
+    }
+
+
+    private int getTotalFreePlacesInAud(int testPointId, int audIndex) {
+        final String getFreeInAudQuery = """
+                SELECT free
+                FROM auds_list
+                WHERE testpoint_id = ? AND aud_num = ?""";
+        int totalFreePlaces = 0;
+        try (
+                Connection connection = getDatabaseConnection();
+                PreparedStatement getFreeInAudStmt = connection.prepareStatement(getFreeInAudQuery)
+        ) {
+            getFreeInAudStmt.setInt(1, testPointId);
+            getFreeInAudStmt.setInt(2, audIndex);
+            try (ResultSet rs = getFreeInAudStmt.executeQuery()) {
+                while (rs.next()) {
+                    totalFreePlaces = rs.getInt("free");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return totalFreePlaces;
+    }
+
+
+    private void setTotalFreePlacesInAud(int testPointId, int audIndex, int freePlacesToSet) {
+        final String setFreeInAudQuery = """
+                UPDATE auds_list
+                SET free = ?
+                WHERE testpoint_id = ? AND aud_num = ?""";
+        try (
+                Connection connection = getDatabaseConnection();
+                PreparedStatement setFreeInAudStmt = connection.prepareStatement(setFreeInAudQuery)
+        ) {
+            setFreeInAudStmt.setInt(1, freePlacesToSet);
+            setFreeInAudStmt.setInt(2, testPointId);
+            setFreeInAudStmt.setInt(3, audIndex);
+            setFreeInAudStmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private int getTotalPeoplesInAud(int testPointId, int audIndex) {
+        final String getNumPupilsInThisAud = """
+                SELECT MAX(place)
+                FROM `allocation`
+                WHERE testpoint_id = ? AND aud = ?""";
+        int totalPeoplesInAud = 0;
+        try (
+                Connection connection = getDatabaseConnection();
+                PreparedStatement getNumPupilsInThisAudStmt = connection.prepareStatement(getNumPupilsInThisAud)
+        ) {
+            getNumPupilsInThisAudStmt.setInt(1, testPointId);
+            getNumPupilsInThisAudStmt.setInt(2, audIndex);
+            try (ResultSet rs = getNumPupilsInThisAudStmt.executeQuery()) {
+                while (rs.next()) {
+                    totalPeoplesInAud = rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return totalPeoplesInAud;
+    }
+
 
     private Connection getDatabaseConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASS);

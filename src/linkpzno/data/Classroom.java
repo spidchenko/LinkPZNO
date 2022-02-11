@@ -1,6 +1,6 @@
 package linkpzno.data;
 
-public class Auditory {
+public class Classroom {
     int id;
     int testPointId;
     int audNum;     //Номер аудитории
@@ -9,7 +9,7 @@ public class Auditory {
     int free;       //Количество свободных мест
     String code;
 
-    public Auditory(int id, int testPointId, int audNum, int predmetId, int langId, int free, String code) {
+    public Classroom(int id, int testPointId, int audNum, int predmetId, int langId, int free, String code) {
         this.id = id;
         this.testPointId = testPointId;
         this.audNum = audNum;
@@ -23,4 +23,14 @@ public class Auditory {
         return free;
     }
 
+//    @Override
+//    public String toString() {
+//        return System.lineSeparator() + "{id:" + id +
+//               " tpId:" + testPointId +
+//               " index:" + audNum +
+//               " subject:" + predmetId +
+//               " lang:" + langId +
+//               " free:" + free +
+//               " code:" + code + "}";
+//    }
 }
