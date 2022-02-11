@@ -11,6 +11,10 @@ public class TestDay {
         this.date = date;
     }
 
+    public int getId() {
+        return id;
+    }
+
     @Override
     public String toString() {
         return id + " - " + name;
