@@ -45,7 +45,7 @@ public class DBConnection {
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement stmt = connection.prepareStatement(getEduCityQuery);
-                ResultSet rs = stmt.executeQuery();
+                ResultSet rs = stmt.executeQuery()
         ) {
             int i = 0;
             while (rs.next()) {
@@ -71,12 +71,12 @@ public class DBConnection {
 
         try (
                 Connection connection = getDatabaseConnection();
-                PreparedStatement pstmt = connection.prepareStatement(getTestPointsQuery);
+                PreparedStatement stmt = connection.prepareStatement(getTestPointsQuery)
         ) {
-            pstmt.setInt(1, eduCityId);
-            pstmt.setInt(2, testDayId);
+            stmt.setInt(1, eduCityId);
+            stmt.setInt(2, testDayId);
 
-            try (ResultSet rs = pstmt.executeQuery()) {
+            try (ResultSet rs = stmt.executeQuery()) {
                 Arrays.fill(testPointList, null);
                 int i = 0;
                 while (rs.next()) {
@@ -126,7 +126,7 @@ public class DBConnection {
 
         try (
                 Connection connection = getDatabaseConnection();
-                PreparedStatement stmt = connection.prepareStatement(getSubjectLangQuery);
+                PreparedStatement stmt = connection.prepareStatement(getSubjectLangQuery)
         ) {
             stmt.setInt(1, testDayId);
             stmt.setInt(2, eduCityId);
@@ -149,7 +149,7 @@ public class DBConnection {
     }
 
 
-    private void createEmptyAuditories(int testPointId, int audsNumToCreate) {
+    private void createEmptyClassrooms(int testPointId, int audsNumToCreate) {
 
         final String newAudQuery = """
                 INSERT INTO auds_list (testpoint_id, aud_num, predmet_id, lang_id, free, code)
@@ -157,7 +157,7 @@ public class DBConnection {
 
         try (
                 Connection connection = getDatabaseConnection();
-                PreparedStatement updateStmt = connection.prepareStatement(newAudQuery);
+                PreparedStatement updateStmt = connection.prepareStatement(newAudQuery)
         ) {
             for (int audIndex = 1; audIndex <= audsNumToCreate; audIndex++) {
                 updateStmt.setInt(1, testPointId);
@@ -220,7 +220,7 @@ public class DBConnection {
 
             if ((countQueryResult != -1) && (countQueryResult != audsNum)) {
                 System.err.println("countQueryResult != audsNum: " + countQueryResult + " " + audsNum);
-                createEmptyAuditories(testPointId, audsNum);
+                createEmptyClassrooms(testPointId, audsNum);
             }
 
             Arrays.fill(auditoryList, null);
@@ -266,7 +266,7 @@ public class DBConnection {
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement stmt = connection.prepareStatement(subjectLangQuery);
-                PreparedStatement updateStmt = connection.prepareStatement(updateSubjectLangQuery);
+                PreparedStatement updateStmt = connection.prepareStatement(updateSubjectLangQuery)
         ) {
             for (int audIndex = 1; audIndex <= audsNum; audIndex++) {
                 stmt.setInt(1, testPointId);
@@ -289,7 +289,7 @@ public class DBConnection {
                         }
                         //Check lang
                         if ((currentLangId != audLangId) && (audLangId != -1)) {
-                            audLangId = 9;//Multilang - UKR + RUS
+                            audLangId = 9;                                          //Multilingual - UKR + RUS
                         } else {
                             audLangId = currentLangId;
                         }
@@ -372,7 +372,7 @@ public class DBConnection {
                 PreparedStatement newAllocationStmt = connection.prepareStatement(newAllocationRow);
                 PreparedStatement getFreeInAudStmt = connection.prepareStatement(getFreeInAudQuery);
                 PreparedStatement setFreeInAudStmt = connection.prepareStatement(setFreeInAudQuery);
-                PreparedStatement getAudInfoStmt = connection.prepareStatement(getAudInfoQuery);
+                PreparedStatement getAudInfoStmt = connection.prepareStatement(getAudInfoQuery)
         ) {
             //Выбираем н человек из базы
             getNPupilsStmt.setInt(1, subjectLangToLink.getSubjectId());
@@ -386,7 +386,6 @@ public class DBConnection {
                 }
                 System.out.println("Linking peoples with this ids: " + Arrays.toString(pupilsIdToLink));
             }
-
 
 
             getNumPupilsInThisAudStmt.setInt(1, testPointIdToLink);
@@ -431,12 +430,7 @@ public class DBConnection {
 
             //В БАЗУ ПОКА НЕ ПИШЕТ
             //Пройдемся по результату. если есть разные subject_id / lang_id то в свойствах аудитории 99, иначе predmet_id = subject_id, lang_id = lang_id
-
-            //??????????????????????????????????????????????
-            //??????????????????????????????????????????????
-            //??????????????????????????????????????????????
-            //??????????????????????????????????????????????
-            //??????????????????????????????????????????????
+            //TODO check this code
 
             getAudInfoStmt.setInt(1, testPointIdToLink);
             getAudInfoStmt.setInt(2, audNumToLink);
