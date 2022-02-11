@@ -1,59 +1,15 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package linkpzno;
 
-import linkpzno.data.EduCity;
-import linkpzno.data.TestDay;
+import linkpzno.data.*;
 
 import java.sql.*;
 import java.util.Arrays;
 
-/**
- * @author spidchenko.d
- */
 public class DBConnection {
 
     private static final String URL = "jdbc:mysql://127.0.0.1:3306/khersont_db";
     private static final String USER = "root";
     private static final String PASS = "root";
-
-
-//    private boolean isInitDone = false;
-
-//    private Connection con = null;
-    //    private Statement stmt = null;
-//    private Statement updateStmt = null;
-//    private ResultSet rs = null;
-//    private final ResultSet rs2 = null;
-//    private final ResultSet rs3 = null;
-
-
-//    boolean init() {     //Возвращает true если все норм
-//        boolean returnStatus = false;
-////        appSettings currentSettings = new appSettings();
-//
-//        try {
-//            con = DriverManager.getConnection(URL, USER, PASS);
-//
-////            updateStmt = con.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-//            System.out.println("Database connection initialization OK!");
-//            isInitDone = true;
-//            returnStatus = true;
-//        } catch (SQLException sqlEx) {
-//            sqlEx.printStackTrace();
-//
-//        }
-//
-//        return returnStatus;
-//    }
-
-
-    private Connection getDatabaseConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USER, PASS);
-    }
 
 
     void setTestDays(TestDay[] testDayList) {
@@ -68,10 +24,11 @@ public class DBConnection {
         ) {
             int i = 0;
             while (rs.next()) {
-                testDayList[i] = new TestDay();
-                testDayList[i].id = rs.getInt("id");
-                testDayList[i].name = rs.getString("name");
-                testDayList[i].date = rs.getString("date");
+                testDayList[i] = new TestDay(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("date")
+                );
                 i++;
             }
         } catch (SQLException sqlEx) {
@@ -92,10 +49,11 @@ public class DBConnection {
         ) {
             int i = 0;
             while (rs.next()) {
-                eduCityList[i] = new EduCity();
-                eduCityList[i].id = rs.getInt("id");
-                eduCityList[i].name = rs.getString("name");
-                eduCityList[i].districtId = rs.getInt("district_id");
+                eduCityList[i] = new EduCity(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getInt("district_id")
+                );
                 i++;
             }
         } catch (SQLException sqlEx) {
@@ -111,7 +69,6 @@ public class DBConnection {
                 JOIN pt ON pt.id = test_points.pt_id
                 WHERE archive LIKE "Активний" AND district = ? AND date_id = ?""";
 
-//        System.err.println(getTestPointsQuery);
         try (
                 Connection connection = getDatabaseConnection();
                 PreparedStatement pstmt = connection.prepareStatement(getTestPointsQuery);
@@ -123,14 +80,13 @@ public class DBConnection {
                 Arrays.fill(testPointList, null);
                 int i = 0;
                 while (rs.next()) {
-                    testPointList[i] = new TestPoint();
-                    testPointList[i].id = rs.getInt("id");
-                    testPointList[i].ptId = rs.getInt("pt_id");
-                    testPointList[i].name = rs.getString("name");
-                    testPointList[i].shortName = rs.getString("short_name");
-                    testPointList[i].audsNum = rs.getInt("auds");
-                    testPointList[i].name = testPointList[i].name.replace("&quot;", "\"");              //Replace &quot; -> "
-                    testPointList[i].shortName = testPointList[i].shortName.replace("&quot;", "\"");    //Replace &quot; -> "
+                    testPointList[i] = new TestPoint(
+                            rs.getInt("id"),
+                            rs.getInt("pt_id"),
+                            rs.getString("name").replace("&quot;", "\""),
+                            rs.getString("short_name").replace("&quot;", "\""),
+                            rs.getInt("auds")
+                    );
                     i++;
                 }
             }
@@ -140,9 +96,6 @@ public class DBConnection {
     }
 
     void getSubjectLangList(SubjectLang[] subjectLangList, int eduCityId, int testDayId) {
-
-        //String getSubjectsQuery = "SELECT id,name FROM `subject` WHERE id IN (SELECT DISTINCT subject_id FROM `subject_user` WHERE payment = 1) AND parent_id = "+testDayComboBoxSelectedIndex;
-        //Выборка предметов из одной сессии которые есть в оплаченых
 
         String getSubjectLangQuery = """
                 SELECT subject_id, lang_id, subject.name AS subject_name, lang.name AS lang_name, COUNT( subject_user.id ) AS NUM
@@ -207,7 +160,6 @@ public class DBConnection {
                 PreparedStatement updateStmt = connection.prepareStatement(newAudQuery);
         ) {
             for (int audIndex = 1; audIndex <= audsNumToCreate; audIndex++) {
-//                updateStmt.executeUpdate("INSERT INTO auds_list (testpoint_id, aud_num, predmet_id, lang_id, free, code) VALUES (" + testPointId + ", " + i + ", " + 0 + ", " + 0 + "," + 15 + " , \"061" + Integer.toString(testPointId + 100000).substring(1) + "00" + Integer.toString(100 + i).substring(1) + "\")");
                 updateStmt.setInt(1, testPointId);
                 updateStmt.setInt(2, audIndex);
                 updateStmt.setInt(3, 0);
@@ -253,8 +205,6 @@ public class DBConnection {
         String getAuditoryListCountQuery = "SELECT COUNT(id) AS n FROM `auds_list` WHERE testpoint_id = ?";
         String getAuditoryListQuery = "SELECT * FROM `auds_list` WHERE testpoint_id = ?";
         int countQueryResult = -1;
-        System.err.println(getAuditoryListCountQuery);
-
 
         try (
                 Connection connection = getDatabaseConnection();
@@ -280,14 +230,15 @@ public class DBConnection {
             try (ResultSet rs = listStmt.executeQuery()) {
                 int i = 0;
                 while (rs.next()) {
-                    auditoryList[i] = new Auditory();
-                    auditoryList[i].id = rs.getInt("id");
-                    auditoryList[i].testPointId = rs.getInt("testpoint_id");
-                    auditoryList[i].audNum = rs.getInt("aud_num");
-                    auditoryList[i].predmetId = rs.getInt("predmet_id");
-                    auditoryList[i].langId = rs.getInt("lang_id");
-                    auditoryList[i].free = rs.getInt("free");
-                    auditoryList[i].code = rs.getString("code");
+                    auditoryList[i] = new Auditory(
+                            rs.getInt("id"),
+                            rs.getInt("testpoint_id"),
+                            rs.getInt("aud_num"),
+                            rs.getInt("predmet_id"),
+                            rs.getInt("lang_id"),
+                            rs.getInt("free"),
+                            rs.getString("code")
+                    );
                     i++;
                 }
             }
@@ -299,7 +250,6 @@ public class DBConnection {
 
     void setAuditorySubjectLangId(int testPointId, int audsNum) {
 
-//        System.err.println(getAuditoryListCountQuery);
         final String subjectLangQuery = """
                 SELECT subject_id, lang_id FROM subject_user
                 JOIN allocation ON allocation.test_id= subject_user.id
@@ -318,9 +268,6 @@ public class DBConnection {
                 PreparedStatement stmt = connection.prepareStatement(subjectLangQuery);
                 PreparedStatement updateStmt = connection.prepareStatement(updateSubjectLangQuery);
         ) {
-
-//            updateStmt = con.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-
             for (int audIndex = 1; audIndex <= audsNum; audIndex++) {
                 stmt.setInt(1, testPointId);
                 stmt.setInt(2, audIndex);
@@ -355,7 +302,6 @@ public class DBConnection {
                     updateStmt.setInt(3, testPointId);
                     updateStmt.setInt(4, audIndex);
                     updateStmt.executeUpdate();
-//                    updateStmt.executeUpdate("UPDATE auds_list SET predmet_id = " + audSubjectId + ", lang_id = " + audLangId + " WHERE testpoint_id = " + testPointId + " AND aud_num = " + audIndex);
                 }
             }
         } catch (SQLException sqlEx) {
@@ -407,7 +353,13 @@ public class DBConnection {
         int numPupilsInThisAud = -1;    //Заполненость аудитории по allocation
         int freeInAud = -1;             //Количество свободных мест в аудитории по aud_list
 
-        if (numPupilsToLink > subjectLangToLink.numPupils) {     //Если выбрано для рассадки людей больше чем есть то завершаем работу функции
+        if (numPupilsToLink <= 0) {
+            System.err.println("You selected 0 pupils!");
+            return;
+        }
+
+        //Если выбрано для рассадки людей больше чем есть то завершаем работу функции
+        if (numPupilsToLink > subjectLangToLink.getNumPupils()) {
             System.err.println("numPupilsToLink > subjectLangToLink.numPupils");
             return;
         }
@@ -423,44 +375,36 @@ public class DBConnection {
                 PreparedStatement getAudInfoStmt = connection.prepareStatement(getAudInfoQuery);
         ) {
             //Выбираем н человек из базы
-            getNPupilsStmt.setInt(1, subjectLangToLink.subjectId);
-            getNPupilsStmt.setInt(2, subjectLangToLink.langId);
-            getNPupilsStmt.setInt(3, subjectLangToLink.eduCityId);
+            getNPupilsStmt.setInt(1, subjectLangToLink.getSubjectId());
+            getNPupilsStmt.setInt(2, subjectLangToLink.getLangId());
+            getNPupilsStmt.setInt(3, subjectLangToLink.getEduCityId());
             getNPupilsStmt.setInt(4, numPupilsToLink);
             try (ResultSet rs = getNPupilsStmt.executeQuery()) {
-                System.out.println(getNPupils);
-
                 int i = 0;
                 while (rs.next()) {
                     pupilsIdToLink[i++] = rs.getInt("id");
                 }
-
-                System.out.println(Arrays.toString(pupilsIdToLink));
+                System.out.println("Linking peoples with this ids: " + Arrays.toString(pupilsIdToLink));
             }
-//            rs = stmt.executeQuery(getNPupils);
 
 
-//            String getNumPupilsInThisAud = "SELECT MAX(place) FROM `allocation` WHERE testpoint_id = " + testPointIdToLink + " AND aud = " + audNumToLink;
+
             getNumPupilsInThisAudStmt.setInt(1, testPointIdToLink);
             getNumPupilsInThisAudStmt.setInt(2, audNumToLink);
-
             try (ResultSet rs = getNumPupilsInThisAudStmt.executeQuery()) {
                 while (rs.next()) {
                     numPupilsInThisAud = rs.getInt("MAX(place)");
                 }
             }
-//            System.out.println(getNumPupilsInThisAud);
-//            rs = getNPupilsStmt.executeQuery(getNumPupilsInThisAud);
 
-            if (numPupilsToLink + numPupilsInThisAud > 15) {   //Если получается больше 15 человек в аудитории
-                System.err.println("AudFull!!!11");
+            //Если получается больше 15 человек в аудитории
+            if (numPupilsToLink + numPupilsInThisAud > 15) {
+                System.err.println("Classroom already full!");
                 return;
             }
 
-//            updateStmt = con.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-
-            for (int j = 0; j < numPupilsToLink; j++) {   //Записали в allocation
-//                updateStmt.executeUpdate("INSERT INTO allocation (test_id, testpoint_id, aud, place, test_code) VALUES (" + pupilsIdToLink[j] + ", " + testPointIdToLink + ", " + audNumToLink + ", " + (++numPupilsInThisAud) + ", \"" + Integer.toString((testPointIdToLink + pupilsIdToLink[j]) % 10) + Integer.toString(testPointIdToLink + 1000).substring(1) + Integer.toString(pupilsIdToLink[j] + 100000).substring(1) + "\")");
+            for (int j = 0; j < numPupilsToLink; j++) {
+                //Записали в allocation
                 newAllocationStmt.setInt(1, pupilsIdToLink[j]);
                 newAllocationStmt.setInt(2, testPointIdToLink);
                 newAllocationStmt.setInt(3, audNumToLink);
@@ -471,8 +415,6 @@ public class DBConnection {
                 newAllocationStmt.setString(5, testCode);
                 newAllocationStmt.executeUpdate();
             }
-//<<<<<<<<<<<
-//            rs = getNPupilsStmt.executeQuery("SELECT free FROM auds_list WHERE testpoint_id = " + testPointIdToLink + " AND aud_num = " + audNumToLink);
 
             getFreeInAudStmt.setInt(1, testPointIdToLink);
             getFreeInAudStmt.setInt(2, audNumToLink);
@@ -487,15 +429,7 @@ public class DBConnection {
             setFreeInAudStmt.setInt(3, audNumToLink);
             setFreeInAudStmt.executeUpdate();
 
-//            updateStmt.executeUpdate("UPDATE auds_list SET free = " + (freeInAud - numPupilsToLink) + " WHERE testpoint_id = " + testPointIdToLink + " AND aud_num = " + audNumToLink);
-
-//В БАЗУ ПОКА НЕ ПИШЕТ
-
-
-//            rs = getNPupilsStmt.executeQuery("SELECT subject_id, lang_id FROM subject_user\n" +
-//                                             "JOIN allocation ON allocation.test_id= subject_user.id \n" +
-//                                             "WHERE testpoint_id = " + testPointIdToLink + " AND aud = " + audNumToLink + "\n" +
-//                                             "GROUP BY subject_id, lang_id");
+            //В БАЗУ ПОКА НЕ ПИШЕТ
             //Пройдемся по результату. если есть разные subject_id / lang_id то в свойствах аудитории 99, иначе predmet_id = subject_id, lang_id = lang_id
 
             //??????????????????????????????????????????????
@@ -531,10 +465,14 @@ public class DBConnection {
                     }
                 }
 
-                System.out.println("audSubjectId = " + audSubjectId + "; audLangId = " + audLangId);
+                System.out.println("Updated ids: audSubjectId = " + audSubjectId + "; audLangId = " + audLangId);
             }
         } catch (SQLException sqlEx) {
             sqlEx.printStackTrace();
         }
+    }
+
+    private Connection getDatabaseConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASS);
     }
 }

@@ -35,12 +35,12 @@ public class Controller {
     void initAuditoryPanel(JComboBox audNumList, int comboBoxPTSelectedIndex, JComboBox subjectList, int comboBoxTestDaySelectedIndex, int comboBoxEduCitySelictedIndex) {
 
         DBConnection dBConnection = new DBConnection();
-        dBConnection.getSubjectLangList(subjectLangList, eduCityList[comboBoxEduCitySelictedIndex].id, testDayList[comboBoxTestDaySelectedIndex].id);//!!!!!!!!!
+        dBConnection.getSubjectLangList(subjectLangList, eduCityList[comboBoxEduCitySelictedIndex].getId(), testDayList[comboBoxTestDaySelectedIndex].getId());//!!!!!!!!!
 
         audNumList.removeAllItems();
-        int lastFullAudNumber = dBConnection.getLastFullAuditoryNumber(testPointList[comboBoxPTSelectedIndex].id);
+        int lastFullAudNumber = dBConnection.getLastFullAuditoryNumber(testPointList[comboBoxPTSelectedIndex].getId());
         System.out.println(lastFullAudNumber);
-        for (int i = lastFullAudNumber + 1; i <= testPointList[comboBoxPTSelectedIndex].audsNum; i++)
+        for (int i = lastFullAudNumber + 1; i <= testPointList[comboBoxPTSelectedIndex].getAudsNum(); i++)
             audNumList.addItem(i);
 
         subjectList.removeAllItems();
@@ -70,7 +70,7 @@ public class Controller {
         int i = 0;
         while (auditoryList[i] != null) {
             progressBarList[i].setEnabled(true);
-            progressBarList[i].setValue(15 - auditoryList[i].free);
+            progressBarList[i].setValue(15 - auditoryList[i].getFree());
             i++;
         }
     }
@@ -78,8 +78,8 @@ public class Controller {
     void setAuditorySubjectLangId(int comboBoxSelIndex) {
         DBConnection dBConnection = new DBConnection();
         dBConnection.setAuditorySubjectLangId(
-                testPointList[comboBoxSelIndex].id,
-                testPointList[comboBoxSelIndex].audsNum);
+                testPointList[comboBoxSelIndex].getId(),
+                testPointList[comboBoxSelIndex].getAudsNum());
     }
 
     void getAuditoryList(int comboBoxSelIndex) {
@@ -87,8 +87,8 @@ public class Controller {
 
         DBConnection dBConnection = new DBConnection();
         dBConnection.getAuditoryList(auditoryList,
-                testPointList[comboBoxSelIndex].id,
-                testPointList[comboBoxSelIndex].audsNum);
+                testPointList[comboBoxSelIndex].getId(),
+                testPointList[comboBoxSelIndex].getAudsNum());
         System.out.println(Arrays.toString(auditoryList));//////////////////////
     }
 
@@ -113,15 +113,15 @@ public class Controller {
 
     void link(int comboBoxPTSelectedIndex, int comboBoxAudNumSelectedIndex, String textFieldNumPupilsText, int comboBoxSubjectSelectedIndex) {
         DBConnection dBConnection = new DBConnection();
-        dBConnection.link(testPointList[comboBoxPTSelectedIndex].id, comboBoxAudNumSelectedIndex, Integer.parseInt(textFieldNumPupilsText), subjectLangList[comboBoxSubjectSelectedIndex]);
+        dBConnection.link(testPointList[comboBoxPTSelectedIndex].getId(), comboBoxAudNumSelectedIndex, Integer.parseInt(textFieldNumPupilsText), subjectLangList[comboBoxSubjectSelectedIndex]);
     }
 
     void setTestPoint(JComboBox comboBoxToSet, int testDayListNumber, int eduCityIdListNumber) {
 
         DBConnection dBConnection = new DBConnection();
-        dBConnection.setTestPoint(testPointList, testDayList[testDayListNumber].id, eduCityList[eduCityIdListNumber].districtId);
+        dBConnection.setTestPoint(testPointList, testDayList[testDayListNumber].getId(), eduCityList[eduCityIdListNumber].getDistrictId());
 
-        System.out.println(testDayList[testDayListNumber].id + " " + eduCityList[eduCityIdListNumber].districtId);//////////////////////////////////
+        System.out.println(testDayList[testDayListNumber].getId() + " " + eduCityList[eduCityIdListNumber].getDistrictId());//////////////////////////////////
         comboBoxToSet.removeAllItems();
 
         for (TestPoint testPoint1 : testPointList) {
