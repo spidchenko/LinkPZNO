@@ -211,9 +211,8 @@ public class DBConnection {
         ) {
             countStmt.setInt(1, testPointId);
             try (ResultSet rs = countStmt.executeQuery()) {
-                while (rs.next()) {
-                    countQueryResult = rs.getInt(1);
-                }
+                rs.next();
+                countQueryResult = rs.getInt(1);
             }
 
             if ((countQueryResult != -1) && (countQueryResult != audsNum)) {
@@ -241,7 +240,6 @@ public class DBConnection {
             sqlEx.printStackTrace();
         }
     }
-
 
 
     void updateSubjectLangIdsInAud(int testPointId, int audsNum) {
@@ -336,7 +334,7 @@ public class DBConnection {
         int numPupilsInThisAud = getTotalPeoplesInAud(testPointIdToLink, audNumToLink);
         //Количество свободных мест в аудитории по aud_list
         int totalFreePlacesInAud = getTotalFreePlacesInAud(testPointIdToLink, audNumToLink);
-        List<Integer> pupilsIdToLink = getFirstNPeoplesToLink(subjectLangToLink, numPupilsToLink);
+        List<Integer> testsToLink = getFirstNTestsToLink(subjectLangToLink, numPupilsToLink);
 
         //Если получается больше 15 человек в аудитории
         if (numPupilsToLink + numPupilsInThisAud > 15) {
@@ -349,14 +347,14 @@ public class DBConnection {
                 PreparedStatement newAllocationStmt = connection.prepareStatement(newAllocationRow)
         ) {
             //Записали в allocation
-            for (int humanId : pupilsIdToLink) {
-                newAllocationStmt.setInt(1, humanId);
+            for (int testId : testsToLink) {
+                newAllocationStmt.setInt(1, testId);
                 newAllocationStmt.setInt(2, testPointIdToLink);
                 newAllocationStmt.setInt(3, audNumToLink);
                 newAllocationStmt.setInt(4, ++numPupilsInThisAud);
-                String testCode = (testPointIdToLink + humanId) % 10 +
+                String testCode = (testPointIdToLink + testId) % 10 +
                                   Integer.toString(testPointIdToLink + 1000).substring(1) +
-                                  Integer.toString(humanId + 100000).substring(1);
+                                  Integer.toString(testId + 100000).substring(1);
                 newAllocationStmt.setString(5, testCode);
                 newAllocationStmt.executeUpdate();
             }
@@ -374,7 +372,7 @@ public class DBConnection {
 
 
     //Выбираем н человек из базы
-    private List<Integer> getFirstNPeoplesToLink(SubjectLang subjectLang, int peoplesNumber) {
+    private List<Integer> getFirstNTestsToLink(SubjectLang subjectLang, int peoplesNumber) {
         final String getNPupils = """
                 SELECT su.id, su.user_id, su.bill
                 FROM subject_user AS su
